@@ -1,102 +1,54 @@
+
 import React, { useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useBook } from "./BookContext";
-import { Image, File, LoaderCircle } from "lucide-react";
-
-async function fileToDataUrl(file: File) {
-  return new Promise<string>((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.readAsDataURL(file);
-  });
-}
-
-function usePDFWorker() {
-  const [progress, setProgress] = useState(0);
-  const [results, setResults] = useState<{ imageUrl: string; name: string }[]>(
-    []
-  );
-  const [loading, setLoading] = useState(false);
-  async function run(file: File) {
-    setLoading(true);
-    setResults([]);
-    setProgress(0);
-    return new Promise<{ imageUrl: string; name: string }[]>(resolve => {
-      const worker = new Worker(
-        new URL("../workers/pdfWorker.ts", import.meta.url),
-        { type: "module" }
-      );
-      let total = 1;
-      const out: { imageUrl: string; name: string }[] = [];
-      worker.onmessage = (event) => {
-        const { pageIndex, imageUrl, name, total: t, done } = event.data;
-        if (typeof t === "number") total = t;
-        if (done) {
-          setLoading(false);
-          setResults(out);
-          resolve(out);
-          worker.terminate();
-          return;
-        }
-        if (pageIndex !== undefined && imageUrl) {
-          out[pageIndex] = { imageUrl, name };
-          setProgress(Math.round(((pageIndex + 1) / total) * 100));
-        }
-      };
-      worker.postMessage({ file });
-    });
-  }
-  return { progress, loading, results, run };
-}
+import { useMultiCoreProcessor } from "@/hooks/useMultiCoreProcessor";
+import { Image, File, LoaderCircle, Cpu } from "lucide-react";
 
 export default function BookUploader() {
   const { setPages } = useBook();
   const [dragActive, setDragActive] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const [importProgress, setImportProgress] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [importedNames, setImportedNames] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { run: runPDFWorker, progress: pdfProgress, loading: pdfLoading } = usePDFWorker();
+  const { 
+    progress, 
+    loading, 
+    results, 
+    processPDF, 
+    processImages, 
+    workerCount 
+  } = useMultiCoreProcessor();
 
   const handleFiles = async (files: FileList | null) => {
     setError(null);
-    setImportProgress(0);
     if (!files || files.length === 0) return;
-    setImporting(true);
+    
     setImportedNames([...files].map(f => f.name));
+    
     try {
       const file = files[0];
+      let pages;
+      
       if (file.type === "application/pdf") {
-        // Use PDF worker thread
-        const pages = await runPDFWorker(file);
-        setPages(pages);
+        console.log(`Processing PDF with ${workerCount} parallel workers`);
+        pages = await processPDF(file);
       } else if (file.type.startsWith("image/")) {
-        // Import as images, update progress per image
-        let count = 0;
-        const total = files.length;
-        const allPages = await Promise.all([...files].map(async (img, idx) => {
-          const imageUrl = await fileToDataUrl(img);
-          count++;
-          setImportProgress(Math.round((count / total) * 100));
-          return {
-            imageUrl,
-            name: img.name || `Image ${idx + 1}`,
-          };
-        }));
-        setPages(allPages);
+        console.log(`Processing ${files.length} images with ${workerCount} parallel workers`);
+        pages = await processImages(files);
       } else {
         setError("Unsupported file type—please import PDF or images.");
         setImportedNames([]);
+        return;
       }
-      setImportProgress(100);
+      
+      setPages(pages);
     } catch (e) {
+      console.error('Processing error:', e);
       setError("There was an error processing your file(s).");
       setImportedNames([]);
-    } finally {
-      setTimeout(() => setImporting(false), 400); // UX: let progress bar finish
     }
   };
 
@@ -108,6 +60,12 @@ export default function BookUploader() {
 
   return (
     <div className="flex flex-col items-center gap-1">
+      {/* Performance indicator */}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+        <Cpu size={14} />
+        <span>Using {workerCount} CPU cores for parallel processing</span>
+      </div>
+
       <div
         className={`relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all duration-200 w-full max-w-lg min-h-[120px] p-6
         ${
@@ -143,10 +101,10 @@ export default function BookUploader() {
           <Button
             variant="default"
             className="font-medium px-6"
-            disabled={importing || pdfLoading}
+            disabled={loading}
             onClick={() => inputRef.current?.click()}
           >
-            {importing || pdfLoading ? (
+            {loading ? (
               <span className="flex items-center gap-2 animate-pulse">
                 <LoaderCircle className="animate-spin" size={19} />
                 Processing...
@@ -167,12 +125,17 @@ export default function BookUploader() {
             </span>
           </div>
         </div>
-        {(importing || pdfLoading) && (
+        {loading && (
           <div className="w-full mt-6">
-            <Progress value={pdfLoading ? pdfProgress : importProgress} />
+            <Progress value={progress} />
             <div className="text-xs text-muted-foreground text-center mt-2 font-mono">
-              Processing... {pdfLoading ? pdfProgress : importProgress}%
+              Processing with {workerCount} workers... {progress}%
             </div>
+            {results.length > 0 && (
+              <div className="text-xs text-primary text-center mt-1">
+                {results.length} pages processed
+              </div>
+            )}
           </div>
         )}
         <div className="absolute inset-0 pointer-events-none rounded-xl border-2 border-dashed transition 
@@ -181,7 +144,7 @@ export default function BookUploader() {
             opacity: dragActive ? 1 : 0
           }} aria-hidden={!dragActive}></div>
       </div>
-      {importedNames.length > 0 && !(importing || pdfLoading) && (
+      {importedNames.length > 0 && !loading && (
         <div className="mt-2 text-primary flex flex-wrap gap-2 items-center text-xs">
           <span className="font-semibold">Imported:</span>
           {importedNames.map((name, i) => (
