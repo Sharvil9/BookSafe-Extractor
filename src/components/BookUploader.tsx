@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -13,29 +12,42 @@ async function fileToDataUrl(file: File) {
   });
 }
 
-async function parsePDF(file: File, onProgress?: (p: number) => void): Promise<{ imageUrl: string; name: string }[]> {
-  const pdfjsLib = await import("pdfjs-dist/build/pdf");
-  await import("pdfjs-dist/build/pdf.worker.entry");
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  const pages: { imageUrl: string; name: string }[] = [];
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const viewport = page.getViewport({ scale: 1.5 });
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d")!;
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    await page.render({ canvasContext: context, viewport }).promise;
-    pages.push({
-      imageUrl: canvas.toDataURL("image/png"),
-      name: `Page ${i}`,
+function usePDFWorker() {
+  const [progress, setProgress] = useState(0);
+  const [results, setResults] = useState<{ imageUrl: string; name: string }[]>(
+    []
+  );
+  const [loading, setLoading] = useState(false);
+  async function run(file: File) {
+    setLoading(true);
+    setResults([]);
+    setProgress(0);
+    return new Promise<{ imageUrl: string; name: string }[]>(resolve => {
+      const worker = new Worker(
+        new URL("../workers/pdfWorker.ts", import.meta.url),
+        { type: "module" }
+      );
+      let total = 1;
+      const out: { imageUrl: string; name: string }[] = [];
+      worker.onmessage = (event) => {
+        const { pageIndex, imageUrl, name, total: t, done } = event.data;
+        if (typeof t === "number") total = t;
+        if (done) {
+          setLoading(false);
+          setResults(out);
+          resolve(out);
+          worker.terminate();
+          return;
+        }
+        if (pageIndex !== undefined && imageUrl) {
+          out[pageIndex] = { imageUrl, name };
+          setProgress(Math.round(((pageIndex + 1) / total) * 100));
+        }
+      };
+      worker.postMessage({ file });
     });
-    if (onProgress) onProgress(Math.round((i / pdf.numPages) * 100));
   }
-  return pages;
+  return { progress, loading, results, run };
 }
 
 export default function BookUploader() {
@@ -47,6 +59,8 @@ export default function BookUploader() {
   const [importedNames, setImportedNames] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const { run: runPDFWorker, progress: pdfProgress, loading: pdfLoading } = usePDFWorker();
+
   const handleFiles = async (files: FileList | null) => {
     setError(null);
     setImportProgress(0);
@@ -56,8 +70,8 @@ export default function BookUploader() {
     try {
       const file = files[0];
       if (file.type === "application/pdf") {
-        // Import PDF, live update
-        const pages = await parsePDF(file, (p) => setImportProgress(p));
+        // Use PDF worker thread
+        const pages = await runPDFWorker(file);
         setPages(pages);
       } else if (file.type.startsWith("image/")) {
         // Import as images, update progress per image
@@ -129,13 +143,13 @@ export default function BookUploader() {
           <Button
             variant="default"
             className="font-medium px-6"
-            disabled={importing}
+            disabled={importing || pdfLoading}
             onClick={() => inputRef.current?.click()}
           >
-            {importing ? (
+            {importing || pdfLoading ? (
               <span className="flex items-center gap-2 animate-pulse">
                 <LoaderCircle className="animate-spin" size={19} />
-                Importing...
+                Processing...
               </span>
             ) : (
               <span className="flex items-center gap-2">
@@ -153,11 +167,11 @@ export default function BookUploader() {
             </span>
           </div>
         </div>
-        {importing && (
+        {(importing || pdfLoading) && (
           <div className="w-full mt-6">
-            <Progress value={importProgress} />
+            <Progress value={pdfLoading ? pdfProgress : importProgress} />
             <div className="text-xs text-muted-foreground text-center mt-2 font-mono">
-              Importing... {importProgress}%
+              Processing... {pdfLoading ? pdfProgress : importProgress}%
             </div>
           </div>
         )}
@@ -167,7 +181,7 @@ export default function BookUploader() {
             opacity: dragActive ? 1 : 0
           }} aria-hidden={!dragActive}></div>
       </div>
-      {importedNames.length > 0 && !importing && (
+      {importedNames.length > 0 && !(importing || pdfLoading) && (
         <div className="mt-2 text-primary flex flex-wrap gap-2 items-center text-xs">
           <span className="font-semibold">Imported:</span>
           {importedNames.map((name, i) => (
