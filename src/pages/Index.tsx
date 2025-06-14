@@ -2,10 +2,6 @@ import React from "react";
 import { BookProvider } from "@/components/BookContext";
 import BookUploader from "@/components/BookUploader";
 import BookPagePreview from "@/components/BookPagePreview";
-import { Toaster, Sonner } from "@/components/Toaster";
-import { QueryClientProvider } from "@/components/QueryClientProvider";
-import { TooltipProvider } from "@/components/TooltipProvider";
-import { BrowserRouter, Routes } from "react-router-dom";
 
 export default function Index() {
   return (
