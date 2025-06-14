@@ -1,8 +1,9 @@
 
 import React, { useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { useBook } from "./BookContext";
-import { Upload, Image, File } from "lucide-react";
+import { Image, File, LoaderCircle } from "lucide-react";
 
 async function fileToDataUrl(file: File) {
   return new Promise<string>((resolve) => {
@@ -12,8 +13,7 @@ async function fileToDataUrl(file: File) {
   });
 }
 
-async function parsePDF(file: File): Promise<{ imageUrl: string; name: string }[]> {
-  // Lazy import for performance
+async function parsePDF(file: File, onProgress?: (p: number) => void): Promise<{ imageUrl: string; name: string }[]> {
   const pdfjsLib = await import("pdfjs-dist/build/pdf");
   await import("pdfjs-dist/build/pdf.worker.entry");
   pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -33,6 +33,7 @@ async function parsePDF(file: File): Promise<{ imageUrl: string; name: string }[
       imageUrl: canvas.toDataURL("image/png"),
       name: `Page ${i}`,
     });
+    if (onProgress) onProgress(Math.round((i / pdf.numPages) * 100));
   }
   return pages;
 }
@@ -40,37 +41,48 @@ async function parsePDF(file: File): Promise<{ imageUrl: string; name: string }[
 export default function BookUploader() {
   const { setPages } = useBook();
   const [dragActive, setDragActive] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
-  const [uploadedNames, setUploadedNames] = useState<string[]>([]);
+  const [importedNames, setImportedNames] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = async (files: FileList | null) => {
     setError(null);
+    setImportProgress(0);
     if (!files || files.length === 0) return;
-    setLoading(true);
-    setUploadedNames([...files].map(f => f.name));
+    setImporting(true);
+    setImportedNames([...files].map(f => f.name));
     try {
       const file = files[0];
       if (file.type === "application/pdf") {
-        const pages = await parsePDF(file);
+        // Import PDF, live update
+        const pages = await parsePDF(file, (p) => setImportProgress(p));
         setPages(pages);
       } else if (file.type.startsWith("image/")) {
-        // Single or multiple images
-        const allPages = await Promise.all([...files].map(async (img, idx) => ({
-          imageUrl: await fileToDataUrl(img),
-          name: img.name || `Image ${idx + 1}`,
-        })));
+        // Import as images, update progress per image
+        let count = 0;
+        const total = files.length;
+        const allPages = await Promise.all([...files].map(async (img, idx) => {
+          const imageUrl = await fileToDataUrl(img);
+          count++;
+          setImportProgress(Math.round((count / total) * 100));
+          return {
+            imageUrl,
+            name: img.name || `Image ${idx + 1}`,
+          };
+        }));
         setPages(allPages);
       } else {
-        setError("Unsupported file type—please upload PDF or images.");
-        setUploadedNames([]);
+        setError("Unsupported file type—please import PDF or images.");
+        setImportedNames([]);
       }
+      setImportProgress(100);
     } catch (e) {
       setError("There was an error processing your file(s).");
-      setUploadedNames([]);
+      setImportedNames([]);
     } finally {
-      setLoading(false);
+      setTimeout(() => setImporting(false), 400); // UX: let progress bar finish
     }
   };
 
@@ -100,7 +112,7 @@ export default function BookUploader() {
         }}
         onDrop={onDrop}
         tabIndex={0}
-        aria-label="Upload area"
+        aria-label="Import area"
       >
         <input
           ref={inputRef}
@@ -112,23 +124,23 @@ export default function BookUploader() {
         />
         <div className="flex flex-col items-center gap-3">
           <span className="bg-muted rounded-full p-2 mb-2 text-primary">
-            <Upload size={32} strokeWidth={2} />
+            <File size={32} strokeWidth={2} />
           </span>
           <Button
             variant="default"
             className="font-medium px-6"
-            disabled={loading}
+            disabled={importing}
             onClick={() => inputRef.current?.click()}
           >
-            {loading ? (
+            {importing ? (
               <span className="flex items-center gap-2 animate-pulse">
-                <Upload className="animate-bounce" size={19} />
-                Uploading...
+                <LoaderCircle className="animate-spin" size={19} />
+                Importing...
               </span>
             ) : (
               <span className="flex items-center gap-2">
-                <Upload size={19} />
-                Upload PDF or Images
+                <File size={19} />
+                Import PDF or Images
               </span>
             )}
           </Button>
@@ -141,16 +153,24 @@ export default function BookUploader() {
             </span>
           </div>
         </div>
+        {importing && (
+          <div className="w-full mt-6">
+            <Progress value={importProgress} />
+            <div className="text-xs text-muted-foreground text-center mt-2 font-mono">
+              Importing... {importProgress}%
+            </div>
+          </div>
+        )}
         <div className="absolute inset-0 pointer-events-none rounded-xl border-2 border-dashed transition 
           " style={{
             borderColor: dragActive ? 'var(--primary)' : 'transparent',
             opacity: dragActive ? 1 : 0
           }} aria-hidden={!dragActive}></div>
       </div>
-      {uploadedNames.length > 0 && !loading && (
+      {importedNames.length > 0 && !importing && (
         <div className="mt-2 text-primary flex flex-wrap gap-2 items-center text-xs">
-          <span className="font-semibold">Uploaded:</span>
-          {uploadedNames.map((name, i) => (
+          <span className="font-semibold">Imported:</span>
+          {importedNames.map((name, i) => (
             <span key={i} className="inline-block bg-muted px-2 py-0.5 rounded">
               {name}
             </span>
