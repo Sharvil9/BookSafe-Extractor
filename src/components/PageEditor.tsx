@@ -53,7 +53,9 @@ export default function PageEditor({ pageData }: PageEditorProps) {
           originY: 'center',
         });
         // Center the background image
-        fabricCanvas.centerObject(fabricCanvas.backgroundImage);
+        if (fabricCanvas.backgroundImage && typeof fabricCanvas.backgroundImage === 'object') {
+          fabricCanvas.centerObject(fabricCanvas.backgroundImage);
+        }
         fabricCanvas.renderAll();
 
       }, { crossOrigin: 'anonymous' });
