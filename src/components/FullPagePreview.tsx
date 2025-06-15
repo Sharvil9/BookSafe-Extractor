@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,10 +11,17 @@ import LazyBookGrid from "./LazyBookGrid";
 export default function FullPagePreview() {
   const [showGrid, setShowGrid] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const { metadata, renderPage, pdfFile, clearMetadata: onClear, progress } = useSharedLazyPdfProcessor();
 
   const observerRef = useRef<IntersectionObserver>();
   const pageRefs = useRef<Map<number, HTMLElement>>(new Map());
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     if (!metadata || showGrid) return;
@@ -74,36 +82,36 @@ export default function FullPagePreview() {
   return (
     <div className="w-full flex flex-col items-center gap-8 py-4">
       {/* Header Card */}
-      <Card className="w-full max-w-7xl p-4 sm:p-8 bg-gradient-to-r from-amber-100 to-orange-100 border-2 border-amber-300 shadow-2xl sticky top-4 z-30">
+      <Card className={`w-full max-w-7xl bg-gradient-to-r from-amber-100 to-orange-100 border-2 border-amber-300 shadow-2xl sticky top-4 z-30 transition-all duration-300 ease-in-out ${isScrolled ? 'p-3 sm:p-4' : 'p-4 sm:p-8'}`}>
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-center sm:text-left">
-            <h1 className="font-bold text-2xl sm:text-4xl text-amber-900 tracking-wide uppercase">
+            <h1 className={`font-bold text-amber-900 tracking-wide transition-all duration-300 ease-in-out ${isScrolled ? 'text-xl sm:text-3xl' : 'text-2xl sm:text-4xl'}`}>
               {metadata.title || 'Text Document'}
             </h1>
-            <p className="text-base sm:text-xl text-amber-700 mt-2 font-medium">
+            <p className={`text-amber-700 font-medium transition-all duration-300 ease-in-out ${isScrolled ? 'text-sm sm:text-base mt-1' : 'text-base sm:text-xl mt-2'}`}>
               {totalPages} Pages • Knowledge Preserved
             </p>
           </div>
-          <div className="flex items-start flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
+          <div className="flex items-center flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
             <div className="flex flex-col w-full sm:w-auto">
               <Button 
-                size="lg"
-                className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold text-base sm:text-lg px-6 py-3 sm:px-8 sm:py-4 shadow-lg"
+                size={isScrolled ? 'default' : 'lg'}
+                className={`bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold shadow-lg transition-all ${isScrolled ? 'text-sm' : 'text-base sm:text-lg'}`}
                 onClick={handleProcess}
                 disabled={isProcessing || progress === 100}
               >
-                <Play size={20} className="mr-2 hidden sm:inline-block" />
-                {isProcessing ? `Processing... ${progress}%` : progress === 100 ? 'All Pages Processed' : 'Process'}
+                <Play size={isScrolled ? 18 : 20} className="mr-2 hidden sm:inline-block" />
+                {isProcessing ? `Processing... ${progress}%` : 'Process'}
               </Button>
               {(isProcessing || progress > 0) && <Progress value={progress} className="h-2 mt-2" />}
             </div>
             <Button 
-              size="lg"
+              size={isScrolled ? 'default' : 'lg'}
               variant="outline"
-              className="border-2 border-amber-600 text-amber-700 hover:bg-amber-100 font-bold text-base sm:text-lg px-6 py-3 sm:px-8 sm:py-4"
+              className={`border-2 border-amber-600 text-amber-700 hover:bg-amber-100 font-bold transition-all ${isScrolled ? 'text-sm' : 'text-base sm:text-lg'}`}
               onClick={() => setShowGrid(s => !s)}
             >
-              {showGrid ? <List size={20} className="mr-2 hidden sm:inline-block" /> : <Grid3x3 size={20} className="mr-2 hidden sm:inline-block" />}
+              {showGrid ? <List size={isScrolled ? 18 : 20} className="mr-2 hidden sm:inline-block" /> : <Grid3x3 size={isScrolled ? 18 : 20} className="mr-2 hidden sm:inline-block" />}
               {showGrid ? "List View" : "Grid View"}
             </Button>
           </div>
@@ -138,7 +146,7 @@ export default function FullPagePreview() {
                 <h3 className="text-xl font-bold text-amber-800 mb-4 bg-amber-200/70 px-4 py-1 rounded-full">
                     Page {pageData.pageNumber}
                 </h3>
-                <div className="relative flex justify-center bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl shadow-2xl border-4 border-amber-200 p-4 sm:p-8 w-full">
+                <div className="relative flex justify-center bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl shadow-2xl border-4 border-amber-200 p-2 sm:p-4 w-full">
                   {pageData?.isLoading ? (
                     <div className="flex items-center justify-center bg-gradient-to-br from-amber-100 to-orange-100 animate-pulse rounded-xl border-2 border-amber-300 w-full min-h-[50vh]">
                       <div className="text-center">
