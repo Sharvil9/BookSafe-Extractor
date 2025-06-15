@@ -1,12 +1,12 @@
-
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useSharedLazyPdfProcessor } from "@/contexts/LazyPdfProcessorContext";
-import { Play, Grid3x3, X as Cross, List } from "lucide-react";
+import { Play, Grid3x3, X as Cross, List, Download, ScanText } from "lucide-react";
 import PageEditor from "./PageEditor";
 import LazyBookGrid from "./LazyBookGrid";
+import { Textarea } from "./ui/textarea";
 
 // Import the PdfPage interface
 interface PdfPage {
@@ -22,6 +22,9 @@ interface PdfPage {
 export default function FullPagePreview() {
   const [showGrid, setShowGrid] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [ocrResult, setOcrResult] = useState("");
+  const [showOcrEditor, setShowOcrEditor] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { metadata, renderPage, pdfFile, clearMetadata: onClear, progress } = useSharedLazyPdfProcessor();
 
@@ -70,18 +73,50 @@ export default function FullPagePreview() {
 
   const totalPages = metadata.totalPages;
 
-  const handleProcess = () => {
-    setIsProcessing(true);
-    // Start processing all pages in background
-    if(!pdfFile) {
-        // For non-pdf files, all pages are already processed
-        setIsProcessing(false);
+  const handleProcess = async () => {
+    if (!metadata) return;
+
+    const croppedPages = metadata.pages.filter(p => p.croppedImageUrl);
+
+    if (croppedPages.length === 0) {
+        alert("Please crop at least one page before extracting text.");
         return;
     }
-    for (let i = 1; i <= totalPages; i++) {
-        renderPage(i).catch(console.error);
+
+    setIsProcessing(true);
+    setOcrProgress(0);
+    setShowOcrEditor(false);
+
+    const Tesseract = await import('tesseract.js');
+    const worker = await Tesseract.createWorker('eng');
+
+    let fullText = "";
+    for (let i = 0; i < croppedPages.length; i++) {
+        const page = croppedPages[i];
+        if (page.croppedImageUrl) {
+            const { data: { text } } = await worker.recognize(page.croppedImageUrl);
+            fullText += `--- Page ${page.pageNumber} ---\n\n${text}\n\n`;
+            setOcrProgress(Math.round(((i + 1) / croppedPages.length) * 100));
+        }
     }
-    // The button state will be updated by progress changes
+
+    await worker.terminate();
+
+    setOcrResult(fullText);
+    setShowOcrEditor(true);
+    setIsProcessing(false);
+  };
+
+  const handleDownloadText = () => {
+    const blob = new Blob([ocrResult], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${metadata?.title?.replace('.pdf', '') || 'ocr-result'}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   useEffect(() => {
@@ -109,12 +144,12 @@ export default function FullPagePreview() {
                 size={isScrolled ? 'default' : 'lg'}
                 className={`bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold shadow-lg transition-all ${isScrolled ? 'text-sm' : 'text-base sm:text-lg'}`}
                 onClick={handleProcess}
-                disabled={isProcessing || progress === 100}
+                disabled={isProcessing}
               >
-                <Play size={isScrolled ? 18 : 20} className="mr-2 hidden sm:inline-block" />
-                {isProcessing ? `Processing... ${progress}%` : 'Process'}
+                <ScanText size={isScrolled ? 18 : 20} className="mr-2 hidden sm:inline-block" />
+                {isProcessing ? `Extracting... ${ocrProgress}%` : 'Extract Text'}
               </Button>
-              {(isProcessing || progress > 0) && <Progress value={progress} className="h-2 mt-2" />}
+              {isProcessing && <Progress value={ocrProgress} className="h-2 mt-2" />}
             </div>
             <Button 
               size={isScrolled ? 'default' : 'lg'}
@@ -181,6 +216,30 @@ export default function FullPagePreview() {
           </div>
         )}
       </div>
+
+      {/* OCR Editor */}
+      {showOcrEditor && (
+        <Card className="w-full max-w-7xl p-4 sm:p-6 bg-gradient-to-r from-amber-100 to-orange-100 border-2 border-amber-300 shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl sm:text-3xl font-bold text-amber-900">Extracted Text</h2>
+                <div className="flex items-center gap-2">
+                    <Button onClick={handleDownloadText} className="bg-amber-600 hover:bg-amber-700 text-white">
+                        <Download size={18} className="mr-2"/>
+                        Download .txt
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => setShowOcrEditor(false)} className="text-amber-800 hover:bg-amber-200">
+                        <Cross size={24} />
+                    </Button>
+                </div>
+            </div>
+            <Textarea 
+                value={ocrResult}
+                onChange={(e) => setOcrResult(e.target.value)}
+                className="w-full min-h-[50vh] bg-white border-amber-300 focus:ring-amber-500 text-base p-4 rounded-lg"
+                placeholder="Editable OCR text..."
+            />
+        </Card>
+      )}
     </div>
   );
 }

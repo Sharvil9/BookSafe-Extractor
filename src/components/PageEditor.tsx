@@ -1,8 +1,7 @@
-
 import React, { useRef, useEffect, useState } from "react";
 import { fabric } from "fabric";
 import { Button } from "@/components/ui/button";
-import { Crop, FlipHorizontal, RotateCcw, RotateCw, Trash2 } from "lucide-react";
+import { Crop, FlipHorizontal, RotateCcw, RotateCw, Trash2, ScanText } from "lucide-react";
 import { useSharedLazyPdfProcessor } from "@/contexts/LazyPdfProcessorContext";
 
 // Duplicating interface here to avoid import cycle issues if we were to export it from the hook file.
@@ -139,8 +138,24 @@ export default function PageEditor({ pageData }: PageEditorProps) {
   };
   
   const handleReset = () => {
-    if (!updatePageData) return;
+    if (!updatePageData || !canvas) return;
+
+    // If in crop mode, cancel it
+    if (isCropMode) {
+      canvas.remove(...canvas.getObjects('rect'));
+      canvas.selection = false;
+      setIsCropMode(false);
+    }
+    
+    // Reset mirror on current canvas instance
+    const image = canvas.backgroundImage as fabric.Image;
+    if (image) {
+      image.set('flipX', false);
+    }
+    
     updatePageData(pageData.pageNumber, { rotation: 0, croppedImageUrl: undefined });
+    
+    canvas.renderAll();
   };
 
   return (
@@ -162,7 +177,7 @@ export default function PageEditor({ pageData }: PageEditorProps) {
             <RotateCw size={18} className="mr-2" />
             Rotate Right
         </Button>
-        <Button onClick={handleReset} variant="outline" className="border-2 border-red-600 text-red-700 hover:bg-red-100 font-bold" disabled={isCropMode}>
+        <Button onClick={handleReset} variant="outline" className="border-2 border-red-600 text-red-700 hover:bg-red-100 font-bold">
             <Trash2 size={18} className="mr-2" />
             Reset
         </Button>
