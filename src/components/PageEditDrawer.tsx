@@ -1,20 +1,21 @@
-
 import React, { useState } from "react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@/components/ui/drawer";
-import { useBook } from "./BookContext";
 import { Crop, RotateCcw, RotateCw, Trash2, Undo, Redo } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+export interface BookPage {
+  imageUrl: string;
+  name: string;
+}
+
 // Minimal edit drawer UI with key actions
 export default function PageEditDrawer({
-  pageIndex,
+  page,
   onClose,
 }: {
-  pageIndex: number;
+  page: BookPage;
   onClose: () => void;
 }) {
-  const { pages } = useBook();
-  const page = pages[pageIndex];
   // These state vars just for demo visual;
   const [cropMode, setCropMode] = useState(false);
   const [rotation, setRotation] = useState(0);

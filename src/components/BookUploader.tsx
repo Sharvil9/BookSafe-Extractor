@@ -1,14 +1,11 @@
-
 import React, { useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { useBook } from "./BookContext";
 import { useMultiCoreProcessor } from "@/hooks/useMultiCoreProcessor";
 import { useSharedLazyPdfProcessor } from "@/contexts/LazyPdfProcessorContext";
 import { Image, File, LoaderCircle, Cpu, Zap } from "lucide-react";
 
 export default function BookUploader() {
-  const { setPages } = useBook();
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [importedNames, setImportedNames] = useState<string[]>([]);
@@ -28,7 +25,8 @@ export default function BookUploader() {
     metadata,
     loading: lazyLoading,
     progress: lazyProgress,
-    loadPdfMetadata
+    loadPdfMetadata,
+    loadProcessedPages,
   } = useSharedLazyPdfProcessor();
 
   const handleFiles = async (files: FileList | null) => {
@@ -36,7 +34,6 @@ export default function BookUploader() {
     if (!files || files.length === 0) return;
     
     // Clear previous imports
-    setPages([]);
     setImportedNames([]);
     setUseLazyLoading(false);
     
@@ -56,13 +53,13 @@ export default function BookUploader() {
           console.log(`Processing PDF with ${workerCount} parallel workers`);
           setUseLazyLoading(false);
           const pages = await processPDF(file);
-          setPages(pages);
+          loadProcessedPages(pages, file.name);
         }
-      } else if (file.type.startsWith("image/")) {
+      } else if (files[0].type.startsWith("image/")) {
         console.log(`Processing ${files.length} images with ${workerCount} parallel workers`);
         setUseLazyLoading(false);
         const pages = await processImages(files);
-        setPages(pages);
+        loadProcessedPages(pages, files.length > 1 ? `${files.length} images` : files[0].name);
       } else {
         setError("Unsupported file type—please import a PDF or image file.");
         setImportedNames([]);
@@ -80,7 +77,7 @@ export default function BookUploader() {
     event.preventDefault();
     setDragActive(false);
     handleFiles(event.dataTransfer.files);
-  }, []);
+  }, [handleFiles]);
 
   const isLoading = multiCoreLoading || lazyLoading;
   const progress = useLazyLoading ? lazyProgress : multiCoreProgress;
@@ -97,7 +94,7 @@ export default function BookUploader() {
         ) : (
           <>
             <Cpu size={20} />
-            <span>Harnessing {workerCount} processing cores of Arrakis</span>
+            <span>Harnessing {workerCount} processing cores (up to 8)</span>
           </>
         )}
       </div>
@@ -192,7 +189,7 @@ export default function BookUploader() {
               {name}
             </span>
           ))}
-          {useLazyLoading && (
+          {(useLazyLoading || metadata) && (
             <span className="inline-block bg-gradient-to-r from-green-200 to-emerald-200 border-2 border-green-400 text-green-800 px-4 py-2 rounded-xl font-bold shadow-md">
               Ready for Preview
             </span>

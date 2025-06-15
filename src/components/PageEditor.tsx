@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from "react";
 import { fabric } from "fabric";
 import { Button } from "@/components/ui/button";
@@ -67,11 +66,15 @@ export default function PageEditor({ imageUrl }: PageEditorProps) {
 
     setIsCropMode(true);
     canvas.selection = true;
+    
+    const canvasWidth = canvas.getWidth();
+    const canvasHeight = canvas.getHeight();
+
     const rect = new fabric.Rect({
-      left: 100,
-      top: 100,
-      width: canvas.getWidth() / 2,
-      height: canvas.getHeight() / 2,
+      left: canvasWidth * 0.05,
+      top: canvasHeight * 0.1,
+      width: canvasWidth * 0.9,
+      height: canvasHeight * 0.8,
       fill: 'rgba(0,0,0,0.3)',
       stroke: '#fde047', // yellow-300
       strokeWidth: 2,

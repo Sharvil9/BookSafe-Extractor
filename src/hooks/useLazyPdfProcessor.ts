@@ -14,6 +14,11 @@ interface PdfMetadata {
   title?: string;
 }
 
+interface ProcessorResult {
+  imageUrl: string;
+  name: string;
+}
+
 export type UseLazyPdfProcessorReturn = ReturnType<typeof useLazyPdfProcessor>;
 
 export function useLazyPdfProcessor() {
@@ -82,8 +87,7 @@ export function useLazyPdfProcessor() {
   }, [parsePdfMetadata]);
 
   const renderPage = useCallback(async (pageNumber: number): Promise<string> => {
-    if (!metadata) throw new Error('PDF metadata not loaded');
-    if (!pdfFile) throw new Error('PDF file not available');
+    if (!pdfFile) throw new Error('PDF file not available for rendering');
     
     // Update page loading state
     setMetadata(prev => {
@@ -116,6 +120,10 @@ export function useLazyPdfProcessor() {
         const updatedPages = prev.pages.map(p => 
           p.pageNumber === pageNumber ? { ...p, imageUrl, isLoading: false } : p
         );
+
+        const renderedCount = updatedPages.filter(p => p.imageUrl).length;
+        setProgress(Math.round((renderedCount / prev.totalPages) * 100));
+
         return { ...prev, pages: updatedPages };
       });
       
@@ -133,6 +141,24 @@ export function useLazyPdfProcessor() {
     }
   }, [metadata, pdfFile]);
 
+  const loadProcessedPages = useCallback((pages: ProcessorResult[], title: string) => {
+    setLoading(true);
+    setPdfFile(null); // These are not from a single PDF file
+    setMetadata({
+      totalPages: pages.length,
+      title,
+      pages: pages.map((p, i) => ({
+        pageNumber: i + 1,
+        width: 800, // Using default dimensions
+        height: 1120,
+        imageUrl: p.imageUrl,
+        isLoading: false,
+      })),
+    });
+    setProgress(100);
+    setLoading(false);
+  }, []);
+
   const clearMetadata = useCallback(() => {
     setMetadata(null);
     setPdfFile(null);
@@ -146,5 +172,6 @@ export function useLazyPdfProcessor() {
     loadPdfMetadata,
     renderPage,
     clearMetadata,
+    loadProcessedPages,
   };
 }

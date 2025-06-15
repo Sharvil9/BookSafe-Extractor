@@ -1,17 +1,15 @@
-
 import React, { useEffect, useRef, useState } from "react";
-import { useBook } from "./BookContext";
 import PageEditDrawer from "./PageEditDrawer";
-import { useLazyPdfProcessor } from "@/hooks/useLazyPdfProcessor";
+import { useSharedLazyPdfProcessor } from "@/contexts/LazyPdfProcessorContext";
 import { Loader2 } from "lucide-react";
+import type { BookPage } from "./PageEditDrawer";
 
 interface LazyBookGridProps {
   pdfFile?: File;
 }
 
 export default function LazyBookGrid({ pdfFile }: LazyBookGridProps) {
-  const { pages } = useBook();
-  const { metadata, renderPage } = useLazyPdfProcessor();
+  const { metadata, renderPage, pdfFile } = useSharedLazyPdfProcessor();
   const [selected, setSelected] = useState<number | null>(null);
   const [visiblePages, setVisiblePages] = useState<Set<number>>(new Set());
   const observerRef = useRef<IntersectionObserver>();
@@ -41,47 +39,13 @@ export default function LazyBookGrid({ pdfFile }: LazyBookGridProps) {
       const page = metadata.pages.find(p => p.pageNumber === pageNumber);
       if (page && !page.imageUrl && !page.isLoading) {
         try {
-          await renderPage(pageNumber, pdfFile);
+          await renderPage(pageNumber);
         } catch (error) {
           console.error(`Failed to render page ${pageNumber}:`, error);
         }
       }
     });
   }, [visiblePages, metadata, pdfFile, renderPage]);
-
-  // Use regular pages if not using lazy PDF loading
-  if (!metadata && pages.length > 0) {
-    return (
-      <>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 px-2 sm:px-0 py-3 transition-all animate-fade-in">
-          {pages.map((page, idx) => (
-            <button
-              type="button"
-              key={idx}
-              className="relative shadow-lg rounded-xl overflow-hidden flex flex-col items-center border border-muted bg-white transition hover:shadow-xl focus:ring-2 ring-primary group"
-              onClick={() => setSelected(idx)}
-            >
-              <img
-                src={page.imageUrl}
-                alt={page.name}
-                className="object-contain max-h-44 w-full bg-muted transition-transform duration-150 group-hover:scale-105"
-                draggable={false}
-              />
-              <div className="text-[10px] text-muted-foreground font-mono absolute bottom-1 right-2 bg-white/70 rounded px-1">
-                {page.name}
-              </div>
-            </button>
-          ))}
-        </div>
-        {selected !== null && (
-          <PageEditDrawer
-            pageIndex={selected}
-            onClose={() => setSelected(null)}
-          />
-        )}
-      </>
-    );
-  }
 
   if (!metadata) return null;
 
@@ -131,7 +95,10 @@ export default function LazyBookGrid({ pdfFile }: LazyBookGridProps) {
       </div>
       {selected !== null && metadata.pages[selected]?.imageUrl && (
         <PageEditDrawer
-          pageIndex={selected}
+          page={{
+            imageUrl: metadata.pages[selected].imageUrl as string,
+            name: `Page ${metadata.pages[selected].pageNumber}`
+          }}
           onClose={() => setSelected(null)}
         />
       )}
