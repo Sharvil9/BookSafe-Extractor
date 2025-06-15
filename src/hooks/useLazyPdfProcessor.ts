@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 
 interface PdfPage {
@@ -19,6 +18,7 @@ export function useLazyPdfProcessor() {
   const [metadata, setMetadata] = useState<PdfMetadata | null>(null);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
 
   const parsePdfMetadata = useCallback(async (file: File): Promise<PdfMetadata> => {
     const arrayBuffer = await file.arrayBuffer();
@@ -64,6 +64,7 @@ export function useLazyPdfProcessor() {
   const loadPdfMetadata = useCallback(async (file: File) => {
     setLoading(true);
     setProgress(0);
+    setPdfFile(file);
     
     try {
       const metadata = await parsePdfMetadata(file);
@@ -78,8 +79,9 @@ export function useLazyPdfProcessor() {
     }
   }, [parsePdfMetadata]);
 
-  const renderPage = useCallback(async (pageNumber: number, file: File): Promise<string> => {
+  const renderPage = useCallback(async (pageNumber: number): Promise<string> => {
     if (!metadata) throw new Error('PDF metadata not loaded');
+    if (!pdfFile) throw new Error('PDF file not available');
     
     // Update page loading state
     setMetadata(prev => {
@@ -91,7 +93,7 @@ export function useLazyPdfProcessor() {
     });
 
     try {
-      const arrayBuffer = await file.arrayBuffer();
+      const arrayBuffer = await pdfFile.arrayBuffer();
       const pdfjsLib = await import('pdfjs-dist');
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       const page = await pdf.getPage(pageNumber);
@@ -127,13 +129,20 @@ export function useLazyPdfProcessor() {
       });
       throw error;
     }
-  }, [metadata]);
+  }, [metadata, pdfFile]);
+
+  const clearMetadata = useCallback(() => {
+    setMetadata(null);
+    setPdfFile(null);
+  }, []);
 
   return {
     metadata,
     loading,
     progress,
+    pdfFile,
     loadPdfMetadata,
-    renderPage
+    renderPage,
+    clearMetadata,
   };
 }
