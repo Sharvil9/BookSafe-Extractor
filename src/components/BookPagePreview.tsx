@@ -1,6 +1,8 @@
+
 import React, { useState } from "react";
 import BookGrid from "./BookGrid";
 import LazyBookGrid from "./LazyBookGrid";
+import FullPagePreview from "./FullPagePreview";
 import { useBook } from "./BookContext";
 import { useLazyPdfProcessor } from "@/hooks/useLazyPdfProcessor";
 
@@ -9,11 +11,15 @@ export default function BookPagePreview() {
   const { metadata } = useLazyPdfProcessor();
   const [currentFile, setCurrentFile] = useState<File | null>(null);
 
-  // If we have lazy PDF metadata, use LazyBookGrid
+  // If we have lazy PDF metadata, show full preview first, then grid
   if (metadata) {
-    return <LazyBookGrid pdfFile={currentFile} />;
+    return <FullPagePreview pdfFile={currentFile} metadata={metadata} />;
   }
 
-  // Otherwise use regular BookGrid
-  return <BookGrid />;
+  // If we have processed pages, show them in grid
+  if (pages.length > 0) {
+    return <BookGrid />;
+  }
+
+  return null;
 }

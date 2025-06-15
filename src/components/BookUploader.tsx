@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -36,6 +35,12 @@ export default function BookUploader() {
     setError(null);
     if (!files || files.length === 0) return;
     
+    // Clear previous imports
+    setPages([]);
+    setImportedNames([]);
+    setCurrentFile(null);
+    setUseLazyLoading(false);
+    
     setImportedNames([...files].map(f => f.name));
     
     try {
@@ -47,6 +52,7 @@ export default function BookUploader() {
         if (file.size > 10 * 1024 * 1024) {
           console.log('Large PDF detected, using lazy loading approach');
           setUseLazyLoading(true);
+          // Start preprocessing immediately
           await loadPdfMetadata(file);
         } else {
           console.log(`Processing PDF with ${workerCount} parallel workers`);
@@ -175,7 +181,7 @@ export default function BookUploader() {
             )}
             {useLazyLoading && metadata && (
               <div className="text-xs text-primary text-center mt-1">
-                Found {metadata.totalPages} pages - rendering on demand
+                Found {metadata.totalPages} pages - ready for preview!
               </div>
             )}
           </div>
@@ -196,7 +202,7 @@ export default function BookUploader() {
           ))}
           {useLazyLoading && (
             <span className="inline-block bg-green-100 text-green-800 px-2 py-0.5 rounded">
-              Lazy Loading
+              Ready for Preview
             </span>
           )}
         </div>
