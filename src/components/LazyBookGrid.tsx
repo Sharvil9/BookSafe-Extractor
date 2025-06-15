@@ -1,14 +1,11 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import PageEditDrawer from "./PageEditDrawer";
 import { useSharedLazyPdfProcessor } from "@/contexts/LazyPdfProcessorContext";
 import { Loader2 } from "lucide-react";
 import type { BookPage } from "./PageEditDrawer";
 
-interface LazyBookGridProps {
-  pdfFile?: File;
-}
-
-export default function LazyBookGrid({ pdfFile }: LazyBookGridProps) {
+export default function LazyBookGrid() {
   const { metadata, renderPage, pdfFile } = useSharedLazyPdfProcessor();
   const [selected, setSelected] = useState<number | null>(null);
   const [visiblePages, setVisiblePages] = useState<Set<number>>(new Set());
