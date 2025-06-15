@@ -8,6 +8,17 @@ import { Play, Grid3x3, X as Cross, List } from "lucide-react";
 import PageEditor from "./PageEditor";
 import LazyBookGrid from "./LazyBookGrid";
 
+// Import the PdfPage interface
+interface PdfPage {
+  pageNumber: number;
+  width: number;
+  height: number;
+  imageUrl?: string;
+  isLoading?: boolean;
+  rotation?: number;
+  croppedImageUrl?: string;
+}
+
 export default function FullPagePreview() {
   const [showGrid, setShowGrid] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -136,7 +147,7 @@ export default function FullPagePreview() {
             </Suspense>
         ) : (
           <div className="flex flex-col items-center gap-12 w-full">
-            {metadata.pages.map((pageData: any) => (
+            {metadata.pages.map((pageData: PdfPage) => (
               <div
                 key={pageData.pageNumber}
                 ref={el => el && pageRefs.current.set(pageData.pageNumber, el)}
@@ -155,7 +166,7 @@ export default function FullPagePreview() {
                       </div>
                     </div>
                   ) : pageData?.imageUrl ? (
-                    <PageEditor imageUrl={pageData.imageUrl} />
+                    <PageEditor pageData={pageData} />
                   ) : (
                     <div className="flex items-center justify-center bg-gradient-to-br from-amber-100 to-orange-100 border-4 border-dashed border-amber-400 rounded-xl w-full min-h-[50vh]">
                       <div className="text-center">

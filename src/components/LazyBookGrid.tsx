@@ -1,11 +1,11 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useSharedLazyPdfProcessor } from "@/contexts/LazyPdfProcessorContext";
-import { Loader2, RotateCcw, RotateCw } from "lucide-react";
+import { Loader2, RotateCcw, RotateCw, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 
 export default function LazyBookGrid() {
-  const { metadata, renderPage, pdfFile, updatePageRotation } = useSharedLazyPdfProcessor();
+  const { metadata, renderPage, pdfFile, updatePageData } = useSharedLazyPdfProcessor();
   const [visiblePages, setVisiblePages] = useState<Set<number>>(new Set());
   const observerRef = useRef<IntersectionObserver>();
 
@@ -63,7 +63,7 @@ export default function LazyBookGrid() {
               variant="secondary"
               className="h-8 w-8 rounded-full"
               title="Rotate Left"
-              onClick={() => updatePageRotation && updatePageRotation(page.pageNumber, (page.rotation || 0) - 90)}
+              onClick={() => updatePageData && updatePageData(page.pageNumber, { rotation: (page.rotation || 0) - 90 })}
             >
               <RotateCcw size={16}/>
             </Button>
@@ -72,9 +72,18 @@ export default function LazyBookGrid() {
               variant="secondary"
               className="h-8 w-8 rounded-full"
               title="Rotate Right"
-              onClick={() => updatePageRotation && updatePageRotation(page.pageNumber, (page.rotation || 0) + 90)}
+              onClick={() => updatePageData && updatePageData(page.pageNumber, { rotation: (page.rotation || 0) + 90 })}
             >
               <RotateCw size={16} />
+            </Button>
+             <Button
+              size="icon"
+              variant="secondary"
+              className="h-8 w-8 rounded-full"
+              title="Reset Edits"
+              onClick={() => updatePageData && updatePageData(page.pageNumber, { rotation: 0, croppedImageUrl: undefined })}
+            >
+              <Trash2 size={16} />
             </Button>
           </div>
 
@@ -82,9 +91,9 @@ export default function LazyBookGrid() {
             <div className="flex items-center justify-center w-full h-44 bg-muted">
               <Loader2 className="animate-spin" size={24} />
             </div>
-          ) : page.imageUrl ? (
+          ) : (page.croppedImageUrl || page.imageUrl) ? (
             <img
-              src={page.imageUrl}
+              src={page.croppedImageUrl || page.imageUrl}
               alt={`Page ${page.pageNumber}`}
               className="object-contain max-h-44 w-full bg-muted transition-transform duration-300 group-hover:scale-105"
               style={{ transform: `rotate(${page.rotation || 0}deg)` }}

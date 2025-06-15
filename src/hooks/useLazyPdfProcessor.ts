@@ -7,6 +7,7 @@ interface PdfPage {
   imageUrl?: string; // Only populated when rendered
   isLoading?: boolean;
   rotation?: number;
+  croppedImageUrl?: string;
 }
 
 interface PdfMetadata {
@@ -163,11 +164,11 @@ export function useLazyPdfProcessor() {
     setLoading(false);
   }, []);
 
-  const updatePageRotation = useCallback((pageNumber: number, rotation: number) => {
+  const updatePageData = useCallback((pageNumber: number, data: Partial<PdfPage>) => {
     setMetadata(prev => {
       if (!prev) return prev;
       const updatedPages = prev.pages.map(p =>
-        p.pageNumber === pageNumber ? { ...p, rotation } : p
+        p.pageNumber === pageNumber ? { ...p, ...data } : p
       );
       return { ...prev, pages: updatedPages };
     });
@@ -187,6 +188,6 @@ export function useLazyPdfProcessor() {
     renderPage,
     clearMetadata,
     loadProcessedPages,
-    updatePageRotation,
+    updatePageData,
   };
 }
