@@ -1,22 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useLazyPdfProcessor } from "@/hooks/useLazyPdfProcessor";
+import { useSharedLazyPdfProcessor } from "@/contexts/LazyPdfProcessorContext";
 import { ChevronLeft, ChevronRight, Play, Grid3x3, X as Cross } from "lucide-react";
 import PageEditor from "./PageEditor";
 
-interface FullPagePreviewProps {
-  metadata: any;
-  onClear: () => void;
-}
-
-export default function FullPagePreview({ metadata, onClear }: FullPagePreviewProps) {
+export default function FullPagePreview() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showGrid, setShowGrid] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const { renderPage, pdfFile } = useLazyPdfProcessor();
+  const { metadata, renderPage, pdfFile, clearMetadata: onClear } = useSharedLazyPdfProcessor();
 
   useEffect(() => {
+    if (!metadata) return;
     const pageData = metadata.pages.find((p: any) => p.pageNumber === currentPage);
     if (pdfFile && pageData && !pageData.imageUrl && !pageData.isLoading) {
       renderPage(currentPage).catch(console.error);

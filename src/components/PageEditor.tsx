@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { fabric } from "fabric";
 import { Button } from "@/components/ui/button";
-import { Crop, Mirror } from "lucide-react";
+import { Crop, FlipHorizontal } from "lucide-react";
 
 interface PageEditorProps {
   imageUrl: string;
@@ -94,7 +94,7 @@ export default function PageEditor({ imageUrl }: PageEditorProps) {
           {isCropMode ? "Finish Crop" : "Crop"}
         </Button>
         <Button onClick={handleMirror} variant="outline" className="border-2 border-amber-600 text-amber-700 hover:bg-amber-100 font-bold">
-          <Mirror size={18} className="mr-2" />
+          <FlipHorizontal size={18} className="mr-2" />
           Mirror
         </Button>
       </div>

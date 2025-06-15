@@ -14,6 +14,8 @@ interface PdfMetadata {
   title?: string;
 }
 
+export type UseLazyPdfProcessorReturn = ReturnType<typeof useLazyPdfProcessor>;
+
 export function useLazyPdfProcessor() {
   const [metadata, setMetadata] = useState<PdfMetadata | null>(null);
   const [loading, setLoading] = useState(false);

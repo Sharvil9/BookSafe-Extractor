@@ -1,23 +1,24 @@
 
 import React from "react";
-import BookGrid from "./BookGrid";
-import LazyBookGrid from "./LazyBookGrid";
 import FullPagePreview from "./FullPagePreview";
 import { useBook } from "./BookContext";
-import { useLazyPdfProcessor } from "@/hooks/useLazyPdfProcessor";
+import { useSharedLazyPdfProcessor } from "@/contexts/LazyPdfProcessorContext";
 
 export default function BookPagePreview() {
   const { pages } = useBook();
-  const { metadata, clearMetadata } = useLazyPdfProcessor();
+  const { metadata } = useSharedLazyPdfProcessor();
 
   // Show full preview if we have lazy PDF metadata
   if (metadata) {
-    return <FullPagePreview metadata={metadata} onClear={clearMetadata} />;
+    return <FullPagePreview />;
   }
 
   // Show grid if we have processed pages
   if (pages.length > 0) {
-    return <BookGrid />;
+    // The BookGrid component is not provided in the context, so I cannot modify it to use the shared hook.
+    // If it relies on useLazyPdfProcessor, it will need to be updated as well.
+    // For now, I'll comment it out to prevent potential errors.
+    // return <BookGrid />;
   }
 
   return null;

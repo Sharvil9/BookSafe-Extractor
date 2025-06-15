@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useBook } from "./BookContext";
 import { useMultiCoreProcessor } from "@/hooks/useMultiCoreProcessor";
-import { useLazyPdfProcessor } from "@/hooks/useLazyPdfProcessor";
+import { useSharedLazyPdfProcessor } from "@/contexts/LazyPdfProcessorContext";
 import { Image, File, LoaderCircle, Cpu, Zap } from "lucide-react";
 
 export default function BookUploader() {
@@ -29,7 +29,7 @@ export default function BookUploader() {
     loading: lazyLoading,
     progress: lazyProgress,
     loadPdfMetadata
-  } = useLazyPdfProcessor();
+  } = useSharedLazyPdfProcessor();
 
   const handleFiles = async (files: FileList | null) => {
     setError(null);
