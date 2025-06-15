@@ -4,23 +4,33 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useBook } from "./BookContext";
 import { useMultiCoreProcessor } from "@/hooks/useMultiCoreProcessor";
-import { Image, File, LoaderCircle, Cpu } from "lucide-react";
+import { useLazyPdfProcessor } from "@/hooks/useLazyPdfProcessor";
+import { Image, File, LoaderCircle, Cpu, Zap } from "lucide-react";
 
 export default function BookUploader() {
   const { setPages } = useBook();
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [importedNames, setImportedNames] = useState<string[]>([]);
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
+  const [useLazyLoading, setUseLazyLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { 
-    progress, 
-    loading, 
+    progress: multiCoreProgress, 
+    loading: multiCoreLoading, 
     results, 
     processPDF, 
     processImages, 
     workerCount 
   } = useMultiCoreProcessor();
+
+  const {
+    metadata,
+    loading: lazyLoading,
+    progress: lazyProgress,
+    loadPdfMetadata
+  } = useLazyPdfProcessor();
 
   const handleFiles = async (files: FileList | null) => {
     setError(null);
@@ -30,25 +40,36 @@ export default function BookUploader() {
     
     try {
       const file = files[0];
-      let pages;
+      setCurrentFile(file);
       
       if (file.type === "application/pdf") {
-        console.log(`Processing PDF with ${workerCount} parallel workers`);
-        pages = await processPDF(file);
+        // For PDFs larger than 10MB, use lazy loading
+        if (file.size > 10 * 1024 * 1024) {
+          console.log('Large PDF detected, using lazy loading approach');
+          setUseLazyLoading(true);
+          await loadPdfMetadata(file);
+        } else {
+          console.log(`Processing PDF with ${workerCount} parallel workers`);
+          setUseLazyLoading(false);
+          const pages = await processPDF(file);
+          setPages(pages);
+        }
       } else if (file.type.startsWith("image/")) {
         console.log(`Processing ${files.length} images with ${workerCount} parallel workers`);
-        pages = await processImages(files);
+        setUseLazyLoading(false);
+        const pages = await processImages(files);
+        setPages(pages);
       } else {
         setError("Unsupported file type—please import PDF or images.");
         setImportedNames([]);
         return;
       }
-      
-      setPages(pages);
     } catch (e) {
       console.error('Processing error:', e);
       setError("There was an error processing your file(s).");
       setImportedNames([]);
+      setUseLazyLoading(false);
+      setCurrentFile(null);
     }
   };
 
@@ -58,12 +79,24 @@ export default function BookUploader() {
     handleFiles(event.dataTransfer.files);
   }, []);
 
+  const isLoading = multiCoreLoading || lazyLoading;
+  const progress = useLazyLoading ? lazyProgress : multiCoreProgress;
+
   return (
     <div className="flex flex-col items-center gap-1">
       {/* Performance indicator */}
       <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-        <Cpu size={14} />
-        <span>Using {workerCount} CPU cores for parallel processing</span>
+        {useLazyLoading ? (
+          <>
+            <Zap size={14} />
+            <span>Lazy loading mode for optimal performance</span>
+          </>
+        ) : (
+          <>
+            <Cpu size={14} />
+            <span>Using {workerCount} CPU cores for parallel processing</span>
+          </>
+        )}
       </div>
 
       <div
@@ -101,13 +134,13 @@ export default function BookUploader() {
           <Button
             variant="default"
             className="font-medium px-6"
-            disabled={loading}
+            disabled={isLoading}
             onClick={() => inputRef.current?.click()}
           >
-            {loading ? (
+            {isLoading ? (
               <span className="flex items-center gap-2 animate-pulse">
                 <LoaderCircle className="animate-spin" size={19} />
-                Processing...
+                {useLazyLoading ? 'Parsing...' : 'Processing...'}
               </span>
             ) : (
               <span className="flex items-center gap-2">
@@ -125,15 +158,24 @@ export default function BookUploader() {
             </span>
           </div>
         </div>
-        {loading && (
+        {isLoading && (
           <div className="w-full mt-6">
             <Progress value={progress} />
             <div className="text-xs text-muted-foreground text-center mt-2 font-mono">
-              Processing with {workerCount} workers... {progress}%
+              {useLazyLoading ? (
+                <>Parsing PDF structure... {progress}%</>
+              ) : (
+                <>Processing with {workerCount} workers... {progress}%</>
+              )}
             </div>
-            {results.length > 0 && (
+            {!useLazyLoading && results.length > 0 && (
               <div className="text-xs text-primary text-center mt-1">
                 {results.length} pages processed
+              </div>
+            )}
+            {useLazyLoading && metadata && (
+              <div className="text-xs text-primary text-center mt-1">
+                Found {metadata.totalPages} pages - rendering on demand
               </div>
             )}
           </div>
@@ -144,7 +186,7 @@ export default function BookUploader() {
             opacity: dragActive ? 1 : 0
           }} aria-hidden={!dragActive}></div>
       </div>
-      {importedNames.length > 0 && !loading && (
+      {importedNames.length > 0 && !isLoading && (
         <div className="mt-2 text-primary flex flex-wrap gap-2 items-center text-xs">
           <span className="font-semibold">Imported:</span>
           {importedNames.map((name, i) => (
@@ -152,6 +194,11 @@ export default function BookUploader() {
               {name}
             </span>
           ))}
+          {useLazyLoading && (
+            <span className="inline-block bg-green-100 text-green-800 px-2 py-0.5 rounded">
+              Lazy Loading
+            </span>
+          )}
         </div>
       )}
       {error && (
