@@ -87,7 +87,7 @@ export default function PageEditor({ pageData }: PageEditorProps) {
         });
         updatePageData(pageData.pageNumber, { croppedImageUrl: dataUrl, rotation: 0 });
       }
-    }, 800); // Auto-crop after 800ms of inactivity
+    }, 5000); // Auto-crop after 5s of inactivity
   };
   
   const handleMirror = () => {

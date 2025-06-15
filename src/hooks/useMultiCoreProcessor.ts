@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 
@@ -91,12 +92,25 @@ export function useMultiCoreProcessor() {
         }
       } catch (error: any) {
         setLoading(false);
-        if (error && error.name === 'PasswordException') {
-            reject(new Error("This PDF is password-protected and cannot be opened."));
-        } else {
-            console.error('PDF processing error:', error);
-            reject(new Error("This file seems to be corrupted or is not a supported PDF format."));
+        let message = "This file seems to be corrupted or is not a supported PDF format. Please try again.";
+        if (error && error.name) {
+            switch (error.name) {
+                case 'PasswordException':
+                    message = "This PDF is password-protected and cannot be opened.";
+                    break;
+                case 'InvalidPDFException':
+                    message = "The PDF file structure is invalid or corrupted.";
+                    break;
+                case 'MissingDataException':
+                    message = "The PDF file is incomplete or missing essential data.";
+                    break;
+                case 'UnknownErrorException':
+                    message = "An unknown error occurred while processing the PDF.";
+                    break;
+            }
         }
+        console.error('PDF processing error:', error);
+        reject(new Error(message));
       }
     });
   }, [getWorkerCount]);

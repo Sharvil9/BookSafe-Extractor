@@ -8,7 +8,7 @@ import PageEditor from "./PageEditor";
 import LazyBookGrid from "./LazyBookGrid";
 import { Textarea } from "./ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-
+import { useOcr } from "@/hooks/useOcr";
 
 // Import the PdfPage interface
 interface PdfPage {
@@ -29,6 +29,7 @@ export default function FullPagePreview() {
   const [showOcrEditor, setShowOcrEditor] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { metadata, renderPage, pdfFile, clearMetadata: onClear, progress } = useSharedLazyPdfProcessor();
+  const { isOcrReady, recognize } = useOcr();
 
   const observerRef = useRef<IntersectionObserver>();
   const pageRefs = useRef<Map<number, HTMLElement>>(new Map());
@@ -78,10 +79,17 @@ export default function FullPagePreview() {
   const handleProcess = async () => {
     if (!metadata) return;
 
-    const croppedPages = metadata.pages.filter(p => p.croppedImageUrl);
+    const croppedPages = metadata.pages
+        .filter(p => p.croppedImageUrl)
+        .map(p => ({ url: p.croppedImageUrl!, pageNumber: p.pageNumber }));
 
     if (croppedPages.length === 0) {
         alert("Please crop at least one page before extracting text.");
+        return;
+    }
+
+    if (!isOcrReady) {
+        alert("OCR engine is still warming up. Please wait a moment and try again.");
         return;
     }
 
@@ -89,36 +97,16 @@ export default function FullPagePreview() {
     setOcrProgress(0);
     setOcrResult("");
 
-    const Tesseract = await import('tesseract.js');
-    const scheduler = Tesseract.createScheduler();
-    const workerCount = Math.max(1, (navigator.hardwareConcurrency || 4) - 1); // Leave one core for UI
-
-    const workers = await Promise.all(Array(workerCount).fill(0).map(() => 
-        Tesseract.createWorker('eng').then(w => {
-            scheduler.addWorker(w);
-            return w;
-        })
-    ));
-
-    const results = new Array(croppedPages.length);
-    let completedPages = 0;
-
-    await Promise.all(croppedPages.map((page, index) => {
-        if (page.croppedImageUrl) {
-            return scheduler.addJob('recognize', page.croppedImageUrl).then(({ data: { text } }) => {
-                results[index] = `--- Page ${page.pageNumber} ---\n\n${text}\n\n`;
-                completedPages++;
-                setOcrProgress(Math.round((completedPages / croppedPages.length) * 100));
-            });
-        }
-        return Promise.resolve();
-    }));
-
-    await scheduler.terminate();
-
-    setOcrResult(results.join(""));
-    setShowOcrEditor(true);
-    setIsProcessing(false);
+    try {
+        const resultText = await recognize(croppedPages, setOcrProgress);
+        setOcrResult(resultText);
+        setShowOcrEditor(true);
+    } catch (error) {
+        console.error("OCR failed:", error);
+        alert("An error occurred during text extraction. Please try again.");
+    } finally {
+        setIsProcessing(false);
+    }
   };
 
   const handleDownloadText = () => {
@@ -159,10 +147,10 @@ export default function FullPagePreview() {
                     size={isScrolled ? 'default' : 'lg'}
                     className={`bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold shadow-lg transition-all ${isScrolled ? 'text-sm' : 'text-base sm:text-lg'}`}
                     onClick={handleProcess}
-                    disabled={isProcessing}
+                    disabled={isProcessing || !isOcrReady}
                 >
                     <ScanText size={isScrolled ? 18 : 20} className="mr-2 hidden sm:inline-block" />
-                    {isProcessing ? `Extracting... ${ocrProgress}%` : 'Extract Text'}
+                    {isProcessing ? `Extracting... ${ocrProgress}%` : !isOcrReady ? 'OCR warming up...' : 'Extract Text'}
                 </Button>
                 {isProcessing && <Progress value={ocrProgress} className="h-2 mt-2" />}
                 </div>
@@ -193,6 +181,7 @@ export default function FullPagePreview() {
 
       {/* Main Content */}
       <div className="relative flex flex-col items-center gap-8 w-full max-w-7xl">
+        {/* Close button */}
         <Button
           variant="ghost"
           size="icon"
@@ -203,6 +192,7 @@ export default function FullPagePreview() {
           <Cross size={28} />
         </Button>
         
+        {/* Grid/List view */}
         {showGrid ? (
             <Suspense fallback={<div className="text-amber-400 text-xl">Loading grid...</div>}>
                 <LazyBookGrid />
