@@ -1,5 +1,5 @@
-
 import { useState, useCallback } from 'react';
+import * as pdfjsLib from 'pdfjs-dist';
 
 interface ProcessorResult {
   imageUrl: string;
@@ -26,8 +26,10 @@ export function useMultiCoreProcessor() {
       try {
         // Get PDF page count first
         const arrayBuffer = await file.arrayBuffer();
-        // @ts-ignore
-        const pdfjsLib = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js');
+        
+        // Use installed pdfjs-dist and set worker source
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
         const totalPages = pdf.numPages;
 
@@ -87,9 +89,14 @@ export function useMultiCoreProcessor() {
             workers.push(worker);
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         setLoading(false);
-        reject(error);
+        if (error && error.name === 'PasswordException') {
+            reject(new Error("This PDF is password-protected and cannot be opened."));
+        } else {
+            console.error('PDF processing error:', error);
+            reject(new Error("This file seems to be corrupted or is not a supported PDF format."));
+        }
       }
     });
   }, [getWorkerCount]);

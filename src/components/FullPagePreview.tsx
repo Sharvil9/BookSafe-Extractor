@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useSharedLazyPdfProcessor } from "@/contexts/LazyPdfProcessorContext";
-import { Play, Grid3x3, X as Cross, List, Download, ScanText } from "lucide-react";
+import { Play, Grid3x3, X as Cross, List, Download, ScanText, FileText } from "lucide-react";
 import PageEditor from "./PageEditor";
 import LazyBookGrid from "./LazyBookGrid";
 import { Textarea } from "./ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+
 
 // Import the PdfPage interface
 interface PdfPage {
@@ -85,24 +87,36 @@ export default function FullPagePreview() {
 
     setIsProcessing(true);
     setOcrProgress(0);
-    setShowOcrEditor(false);
+    setOcrResult("");
 
     const Tesseract = await import('tesseract.js');
-    const worker = await Tesseract.createWorker('eng');
+    const scheduler = Tesseract.createScheduler();
+    const workerCount = Math.max(1, (navigator.hardwareConcurrency || 4) - 1); // Leave one core for UI
 
-    let fullText = "";
-    for (let i = 0; i < croppedPages.length; i++) {
-        const page = croppedPages[i];
+    const workers = await Promise.all(Array(workerCount).fill(0).map(() => 
+        Tesseract.createWorker('eng').then(w => {
+            scheduler.addWorker(w);
+            return w;
+        })
+    ));
+
+    const results = new Array(croppedPages.length);
+    let completedPages = 0;
+
+    await Promise.all(croppedPages.map((page, index) => {
         if (page.croppedImageUrl) {
-            const { data: { text } } = await worker.recognize(page.croppedImageUrl);
-            fullText += `--- Page ${page.pageNumber} ---\n\n${text}\n\n`;
-            setOcrProgress(Math.round(((i + 1) / croppedPages.length) * 100));
+            return scheduler.addJob('recognize', page.croppedImageUrl).then(({ data: { text } }) => {
+                results[index] = `--- Page ${page.pageNumber} ---\n\n${text}\n\n`;
+                completedPages++;
+                setOcrProgress(Math.round((completedPages / croppedPages.length) * 100));
+            });
         }
-    }
+        return Promise.resolve();
+    }));
 
-    await worker.terminate();
+    await scheduler.terminate();
 
-    setOcrResult(fullText);
+    setOcrResult(results.join(""));
     setShowOcrEditor(true);
     setIsProcessing(false);
   };
@@ -139,17 +153,30 @@ export default function FullPagePreview() {
             </p>
           </div>
           <div className="flex items-center flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
-            <div className="flex flex-col w-full sm:w-auto">
-              <Button 
-                size={isScrolled ? 'default' : 'lg'}
-                className={`bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold shadow-lg transition-all ${isScrolled ? 'text-sm' : 'text-base sm:text-lg'}`}
-                onClick={handleProcess}
-                disabled={isProcessing}
-              >
-                <ScanText size={isScrolled ? 18 : 20} className="mr-2 hidden sm:inline-block" />
-                {isProcessing ? `Extracting... ${ocrProgress}%` : 'Extract Text'}
-              </Button>
-              {isProcessing && <Progress value={ocrProgress} className="h-2 mt-2" />}
+            <div className="flex items-center gap-2">
+                <div className="flex flex-col w-full sm:w-auto">
+                <Button 
+                    size={isScrolled ? 'default' : 'lg'}
+                    className={`bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold shadow-lg transition-all ${isScrolled ? 'text-sm' : 'text-base sm:text-lg'}`}
+                    onClick={handleProcess}
+                    disabled={isProcessing}
+                >
+                    <ScanText size={isScrolled ? 18 : 20} className="mr-2 hidden sm:inline-block" />
+                    {isProcessing ? `Extracting... ${ocrProgress}%` : 'Extract Text'}
+                </Button>
+                {isProcessing && <Progress value={ocrProgress} className="h-2 mt-2" />}
+                </div>
+                {ocrResult && !isProcessing && (
+                <Button
+                    size={isScrolled ? 'default' : 'lg'}
+                    variant="outline"
+                    className={`bg-amber-100 text-amber-800 border-2 border-amber-500 font-bold transition-all ${isScrolled ? 'text-sm' : 'text-base sm:text-lg'}`}
+                    onClick={() => setShowOcrEditor(true)}
+                >
+                    <FileText size={isScrolled ? 18 : 20} className="mr-2 hidden sm:inline-block" />
+                    View Text
+                </Button>
+                )}
             </div>
             <Button 
               size={isScrolled ? 'default' : 'lg'}
@@ -217,29 +244,28 @@ export default function FullPagePreview() {
         )}
       </div>
 
-      {/* OCR Editor */}
-      {showOcrEditor && (
-        <Card className="w-full max-w-7xl p-4 sm:p-6 bg-gradient-to-r from-amber-100 to-orange-100 border-2 border-amber-300 shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl sm:text-3xl font-bold text-amber-900">Extracted Text</h2>
-                <div className="flex items-center gap-2">
-                    <Button onClick={handleDownloadText} className="bg-amber-600 hover:bg-amber-700 text-white">
-                        <Download size={18} className="mr-2"/>
-                        Download .txt
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => setShowOcrEditor(false)} className="text-amber-800 hover:bg-amber-200">
-                        <Cross size={24} />
-                    </Button>
-                </div>
+      {/* OCR Editor Dialog */}
+      <Dialog open={showOcrEditor} onOpenChange={setShowOcrEditor}>
+        <DialogContent className="max-w-4xl w-full h-[80vh] flex flex-col bg-gradient-to-br from-amber-50 to-orange-50">
+            <DialogHeader>
+                <DialogTitle className="text-2xl sm:text-3xl font-bold text-amber-900">Extracted Text</DialogTitle>
+            </DialogHeader>
+            <div className="flex-grow overflow-y-auto pr-2">
+                <Textarea 
+                    value={ocrResult}
+                    onChange={(e) => setOcrResult(e.target.value)}
+                    className="w-full min-h-full bg-white border-amber-300 focus:ring-amber-500 text-base p-4 rounded-lg"
+                    placeholder="Editable OCR text..."
+                />
             </div>
-            <Textarea 
-                value={ocrResult}
-                onChange={(e) => setOcrResult(e.target.value)}
-                className="w-full min-h-[50vh] bg-white border-amber-300 focus:ring-amber-500 text-base p-4 rounded-lg"
-                placeholder="Editable OCR text..."
-            />
-        </Card>
-      )}
+            <DialogFooter className="mt-4">
+                <Button onClick={handleDownloadText} className="bg-amber-600 hover:bg-amber-700 text-white">
+                    <Download size={18} className="mr-2"/>
+                    Download .txt
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

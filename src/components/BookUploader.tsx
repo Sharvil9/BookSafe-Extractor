@@ -29,6 +29,12 @@ export default function BookUploader() {
     loadProcessedPages,
   } = useSharedLazyPdfProcessor();
 
+  const onDrop = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    setDragActive(false);
+    handleFiles(event.dataTransfer.files);
+  }, []);
+
   const handleFiles = async (files: FileList | null) => {
     setError(null);
     if (!files || files.length === 0) return;
@@ -65,19 +71,13 @@ export default function BookUploader() {
         setImportedNames([]);
         return;
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Processing error:', e);
-      setError("The file resisted... Please try again.");
+      setError(e.message || "The file resisted... Please try again.");
       setImportedNames([]);
       setUseLazyLoading(false);
     }
   };
-
-  const onDrop = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    setDragActive(false);
-    handleFiles(event.dataTransfer.files);
-  }, [handleFiles]);
 
   const isLoading = multiCoreLoading || lazyLoading;
   const progress = useLazyLoading ? lazyProgress : multiCoreProgress;

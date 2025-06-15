@@ -1,5 +1,9 @@
-
 /// <reference lib="webworker" />
+
+import * as pdfjsLib from 'pdfjs-dist';
+
+// @ts-ignore - Set worker src for pdfjs-dist
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 // Multi-worker PDF processing for maximum CPU utilization
 
@@ -20,16 +24,6 @@ interface WorkerResult {
 self.onmessage = async (event) => {
   const { file, workerId, pageStart, pageEnd, totalPages } = event.data;
   
-  // @ts-ignore
-  importScripts("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js");
-  // @ts-ignore
-  importScripts("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js");
-  // @ts-ignore
-  const pdfjsLib = self.pdfjsLib;
-  // @ts-ignore
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
-
   try {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -64,7 +58,7 @@ self.onmessage = async (event) => {
 
     // Signal this worker is done
     self.postMessage({ type: 'worker-done', workerId });
-  } catch (error) {
+  } catch (error: any) {
     self.postMessage({ type: 'error', error: error.message, workerId });
   }
 };

@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { fabric } from "fabric";
 import { Button } from "@/components/ui/button";
-import { Crop, FlipHorizontal, RotateCcw, RotateCw, Trash2, ScanText } from "lucide-react";
+import { Crop, FlipHorizontal, RotateCcw, RotateCw, Trash2 } from "lucide-react";
 import { useSharedLazyPdfProcessor } from "@/contexts/LazyPdfProcessorContext";
 
 // Duplicating interface here to avoid import cycle issues if we were to export it from the hook file.
@@ -24,6 +24,7 @@ export default function PageEditor({ pageData }: PageEditorProps) {
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
   const [isCropMode, setIsCropMode] = useState(false);
   const { updatePageData } = useSharedLazyPdfProcessor();
+  const debounceTimeoutRef = useRef<number | null>(null);
 
   const imageUrl = pageData.croppedImageUrl || pageData.imageUrl;
 
@@ -68,6 +69,27 @@ export default function PageEditor({ pageData }: PageEditorProps) {
     }
   }, [imageUrl, pageData.rotation]);
   
+  const debouncedCrop = (cropRect: fabric.Object) => {
+    if (!canvas) return;
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    debounceTimeoutRef.current = window.setTimeout(() => {
+      if (cropRect && cropRect.type === 'rect') {
+        const dataUrl = canvas.toDataURL({
+            format: 'png',
+            left: cropRect.left,
+            top: cropRect.top,
+            // @ts-ignore
+            width: cropRect.width * cropRect.scaleX,
+            // @ts-ignore
+            height: cropRect.height * cropRect.scaleY,
+        });
+        updatePageData(pageData.pageNumber, { croppedImageUrl: dataUrl, rotation: 0 });
+      }
+    }, 800); // Auto-crop after 800ms of inactivity
+  };
+  
   const handleMirror = () => {
     if (canvas) {
       const image = canvas.backgroundImage as fabric.Image;
@@ -82,21 +104,7 @@ export default function PageEditor({ pageData }: PageEditorProps) {
     if(!canvas) return;
 
     if (isCropMode) {
-      const cropRect = canvas.getActiveObject();
-      if (cropRect && cropRect.type === 'rect') {
-        // toDataURL will capture the canvas area defined by the rect
-        const dataUrl = canvas.toDataURL({
-            format: 'png',
-            left: cropRect.left,
-            top: cropRect.top,
-            // @ts-ignore
-            width: cropRect.width * cropRect.scaleX,
-            // @ts-ignore
-            height: cropRect.height * cropRect.scaleY,
-        });
-        updatePageData(pageData.pageNumber, { croppedImageUrl: dataUrl, rotation: 0 });
-      }
-
+      // Cancel crop mode
       canvas.remove(...canvas.getObjects('rect'));
       setIsCropMode(false);
       canvas.selection = false;
@@ -126,6 +134,13 @@ export default function PageEditor({ pageData }: PageEditorProps) {
     });
     canvas.add(rect);
     canvas.setActiveObject(rect);
+    
+    rect.on('modified', (e) => {
+      if (e.target) {
+        debouncedCrop(e.target);
+      }
+    });
+    
     canvas.renderAll();
   };
   
@@ -163,7 +178,7 @@ export default function PageEditor({ pageData }: PageEditorProps) {
       <div className="flex gap-2 sm:gap-4 p-2 bg-amber-100/50 rounded-lg border border-amber-200 flex-wrap justify-center">
         <Button onClick={handleCrop} variant="outline" className="border-2 border-amber-600 text-amber-700 hover:bg-amber-100 font-bold">
           <Crop size={18} className="mr-2" />
-          {isCropMode ? "Finish Crop" : "Crop"}
+          {isCropMode ? "Cancel Crop" : "Crop"}
         </Button>
         <Button onClick={handleMirror} variant="outline" className="border-2 border-amber-600 text-amber-700 hover:bg-amber-100 font-bold" disabled={isCropMode}>
           <FlipHorizontal size={18} className="mr-2" />
