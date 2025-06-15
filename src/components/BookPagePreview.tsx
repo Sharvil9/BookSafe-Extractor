@@ -9,14 +9,13 @@ import { useLazyPdfProcessor } from "@/hooks/useLazyPdfProcessor";
 export default function BookPagePreview() {
   const { pages } = useBook();
   const { metadata } = useLazyPdfProcessor();
-  const [currentFile, setCurrentFile] = useState<File | null>(null);
 
-  // If we have lazy PDF metadata, show full preview first, then grid
+  // Show full preview if we have lazy PDF metadata
   if (metadata) {
-    return <FullPagePreview pdfFile={currentFile} metadata={metadata} />;
+    return <FullPagePreview metadata={metadata} />;
   }
 
-  // If we have processed pages, show them in grid
+  // Show grid if we have processed pages
   if (pages.length > 0) {
     return <BookGrid />;
   }

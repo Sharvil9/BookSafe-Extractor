@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -11,7 +12,6 @@ export default function BookUploader() {
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [importedNames, setImportedNames] = useState<string[]>([]);
-  const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [useLazyLoading, setUseLazyLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -38,14 +38,12 @@ export default function BookUploader() {
     // Clear previous imports
     setPages([]);
     setImportedNames([]);
-    setCurrentFile(null);
     setUseLazyLoading(false);
     
     setImportedNames([...files].map(f => f.name));
     
     try {
       const file = files[0];
-      setCurrentFile(file);
       
       if (file.type === "application/pdf") {
         // For PDFs larger than 10MB, use lazy loading
@@ -66,16 +64,15 @@ export default function BookUploader() {
         const pages = await processImages(files);
         setPages(pages);
       } else {
-        setError("Unsupported file type—please import PDF or images.");
+        setError("Unsupported file type—please import PDF or sacred texts.");
         setImportedNames([]);
         return;
       }
     } catch (e) {
       console.error('Processing error:', e);
-      setError("There was an error processing your file(s).");
+      setError("The ancient texts resist... Please try again.");
       setImportedNames([]);
       setUseLazyLoading(false);
-      setCurrentFile(null);
     }
   };
 
@@ -89,28 +86,28 @@ export default function BookUploader() {
   const progress = useLazyLoading ? lazyProgress : multiCoreProgress;
 
   return (
-    <div className="flex flex-col items-center gap-1">
-      {/* Performance indicator */}
-      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+    <div className="flex flex-col items-center gap-4">
+      {/* Dune-style Performance indicator */}
+      <div className="flex items-center gap-3 text-lg text-amber-700 mb-4 font-medium">
         {useLazyLoading ? (
           <>
-            <Zap size={14} />
-            <span>Lazy loading mode for optimal performance</span>
+            <Zap size={20} />
+            <span>Spice-enhanced processing for maximum efficiency</span>
           </>
         ) : (
           <>
-            <Cpu size={14} />
-            <span>Using {workerCount} CPU cores for parallel processing</span>
+            <Cpu size={20} />
+            <span>Harnessing {workerCount} processing cores of Arrakis</span>
           </>
         )}
       </div>
 
       <div
-        className={`relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all duration-200 w-full max-w-lg min-h-[120px] p-6
+        className={`relative flex flex-col items-center justify-center rounded-3xl border-4 border-dashed transition-all duration-300 w-full max-w-2xl min-h-[200px] p-12
         ${
           dragActive
-            ? "bg-accent border-primary"
-            : "bg-white border-muted"
+            ? "bg-gradient-to-br from-amber-100 to-orange-100 border-amber-500 shadow-2xl"
+            : "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-300 shadow-lg"
         }
         `}
         onDragOver={e => {
@@ -123,7 +120,7 @@ export default function BookUploader() {
         }}
         onDrop={onDrop}
         tabIndex={0}
-        aria-label="Import area"
+        aria-label="Sacred text import area"
       >
         <input
           ref={inputRef}
@@ -133,82 +130,77 @@ export default function BookUploader() {
           className="hidden"
           onChange={e => handleFiles(e.target.files)}
         />
-        <div className="flex flex-col items-center gap-3">
-          <span className="bg-muted rounded-full p-2 mb-2 text-primary">
-            <File size={32} strokeWidth={2} />
+        <div className="flex flex-col items-center gap-8">
+          <span className="bg-gradient-to-br from-amber-200 to-orange-200 rounded-full p-6 shadow-lg border-2 border-amber-400">
+            <File size={48} strokeWidth={2} className="text-amber-800" />
           </span>
           <Button
-            variant="default"
-            className="font-medium px-6"
+            size="lg"
+            className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold text-xl px-12 py-6 shadow-xl"
             disabled={isLoading}
             onClick={() => inputRef.current?.click()}
           >
             {isLoading ? (
-              <span className="flex items-center gap-2 animate-pulse">
-                <LoaderCircle className="animate-spin" size={19} />
-                {useLazyLoading ? 'Parsing...' : 'Processing...'}
+              <span className="flex items-center gap-3 animate-pulse">
+                <LoaderCircle className="animate-spin" size={24} />
+                {useLazyLoading ? 'Awakening the Text...' : 'Processing Sacred Knowledge...'}
               </span>
             ) : (
-              <span className="flex items-center gap-2">
-                <File size={19} />
-                Import PDF or Images
+              <span className="flex items-center gap-3">
+                <File size={24} />
+                Import Sacred Texts
               </span>
             )}
           </Button>
-          <div className="text-xs text-muted-foreground mt-2 mb-0 text-center">
-            Drag and drop, or click the button. <br />
-            <span className="flex items-center gap-1 mt-1">
-              <File size={14} className="inline" /> PDF 
-              <span className="mx-1">|</span>
-              <Image size={14} className="inline" /> Images (JPG, PNG)
+          <div className="text-lg text-amber-700 text-center font-medium">
+            Drag and drop your sacred texts, or click the button above <br />
+            <span className="flex items-center gap-2 mt-3 justify-center">
+              <File size={18} className="inline" /> Ancient PDFs 
+              <span className="mx-2 text-amber-500">|</span>
+              <Image size={18} className="inline" /> Sacred Images (JPG, PNG)
             </span>
           </div>
         </div>
         {isLoading && (
-          <div className="w-full mt-6">
-            <Progress value={progress} />
-            <div className="text-xs text-muted-foreground text-center mt-2 font-mono">
+          <div className="w-full mt-8">
+            <Progress value={progress} className="h-3" />
+            <div className="text-lg text-amber-700 text-center mt-4 font-bold">
               {useLazyLoading ? (
-                <>Parsing PDF structure... {progress}%</>
+                <>Awakening the ancient structure... {progress}%</>
               ) : (
-                <>Processing with {workerCount} workers... {progress}%</>
+                <>Processing with the power of {workerCount} cores... {progress}%</>
               )}
             </div>
             {!useLazyLoading && results.length > 0 && (
-              <div className="text-xs text-primary text-center mt-1">
-                {results.length} pages processed
+              <div className="text-lg text-orange-600 text-center mt-2 font-medium">
+                {results.length} pages have been awakened
               </div>
             )}
             {useLazyLoading && metadata && (
-              <div className="text-xs text-primary text-center mt-1">
-                Found {metadata.totalPages} pages - ready for preview!
+              <div className="text-lg text-green-600 text-center mt-2 font-bold">
+                Discovered {metadata.totalPages} sacred pages - Ready for enlightenment!
               </div>
             )}
           </div>
         )}
-        <div className="absolute inset-0 pointer-events-none rounded-xl border-2 border-dashed transition 
-          " style={{
-            borderColor: dragActive ? 'var(--primary)' : 'transparent',
-            opacity: dragActive ? 1 : 0
-          }} aria-hidden={!dragActive}></div>
       </div>
       {importedNames.length > 0 && !isLoading && (
-        <div className="mt-2 text-primary flex flex-wrap gap-2 items-center text-xs">
-          <span className="font-semibold">Imported:</span>
+        <div className="mt-6 text-amber-800 flex flex-wrap gap-3 items-center text-lg">
+          <span className="font-bold text-xl">Sacred Text Imported:</span>
           {importedNames.map((name, i) => (
-            <span key={i} className="inline-block bg-muted px-2 py-0.5 rounded">
+            <span key={i} className="inline-block bg-gradient-to-r from-amber-200 to-orange-200 border-2 border-amber-400 text-amber-800 px-4 py-2 rounded-xl font-medium shadow-md">
               {name}
             </span>
           ))}
           {useLazyLoading && (
-            <span className="inline-block bg-green-100 text-green-800 px-2 py-0.5 rounded">
-              Ready for Preview
+            <span className="inline-block bg-gradient-to-r from-green-200 to-emerald-200 border-2 border-green-400 text-green-800 px-4 py-2 rounded-xl font-bold shadow-md">
+              Ready for Sacred Preview
             </span>
           )}
         </div>
       )}
       {error && (
-        <span className="text-destructive text-xs mt-1">{error}</span>
+        <span className="text-red-600 text-lg mt-3 font-medium bg-red-100 px-4 py-2 rounded-lg border border-red-300">{error}</span>
       )}
     </div>
   );
