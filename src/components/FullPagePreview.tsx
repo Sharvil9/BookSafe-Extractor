@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -73,9 +72,9 @@ export default function FullPagePreview() {
   }, [progress]);
 
   return (
-    <div className="w-full flex flex-col items-center gap-8 py-8">
+    <div className="w-full flex flex-col items-center gap-8 py-4">
       {/* Header Card */}
-      <Card className="w-full max-w-7xl p-4 sm:p-8 bg-gradient-to-r from-amber-100 to-orange-100 border-2 border-amber-300 shadow-2xl">
+      <Card className="w-full max-w-7xl p-4 sm:p-8 bg-gradient-to-r from-amber-100 to-orange-100 border-2 border-amber-300 shadow-2xl sticky top-4 z-30">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-center sm:text-left">
             <h1 className="font-bold text-2xl sm:text-4xl text-amber-900 tracking-wide uppercase">
@@ -94,7 +93,7 @@ export default function FullPagePreview() {
                 disabled={isProcessing || progress === 100}
               >
                 <Play size={20} className="mr-2 hidden sm:inline-block" />
-                {isProcessing ? `Processing... ${progress}%` : progress === 100 ? 'All Pages Processed' : 'Process All Pages'}
+                {isProcessing ? `Processing... ${progress}%` : progress === 100 ? 'All Pages Processed' : 'Process'}
               </Button>
               {(isProcessing || progress > 0) && <Progress value={progress} className="h-2 mt-2" />}
             </div>
@@ -141,7 +140,7 @@ export default function FullPagePreview() {
                 </h3>
                 <div className="relative flex justify-center bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl shadow-2xl border-4 border-amber-200 p-4 sm:p-8 w-full">
                   {pageData?.isLoading ? (
-                    <div className="flex items-center justify-center bg-gradient-to-br from-amber-100 to-orange-100 animate-pulse rounded-xl border-2 border-amber-300 w-full min-h-[60vh]">
+                    <div className="flex items-center justify-center bg-gradient-to-br from-amber-100 to-orange-100 animate-pulse rounded-xl border-2 border-amber-300 w-full min-h-[50vh]">
                       <div className="text-center">
                         <div className="text-2xl text-amber-800 font-bold mb-2">Processing Page {pageData.pageNumber}...</div>
                         <div className="text-lg text-amber-600">The spice must flow...</div>
@@ -150,7 +149,7 @@ export default function FullPagePreview() {
                   ) : pageData?.imageUrl ? (
                     <PageEditor imageUrl={pageData.imageUrl} />
                   ) : (
-                    <div className="flex items-center justify-center bg-gradient-to-br from-amber-100 to-orange-100 border-4 border-dashed border-amber-400 rounded-xl w-full min-h-[60vh]">
+                    <div className="flex items-center justify-center bg-gradient-to-br from-amber-100 to-orange-100 border-4 border-dashed border-amber-400 rounded-xl w-full min-h-[50vh]">
                       <div className="text-center">
                         <div className="text-3xl text-amber-800 font-bold mb-2">Page {pageData.pageNumber}</div>
                         <div className="text-xl text-amber-600">Ready to be processed</div>

@@ -6,6 +6,7 @@ interface PdfPage {
   height: number;
   imageUrl?: string; // Only populated when rendered
   isLoading?: boolean;
+  rotation?: number;
 }
 
 interface PdfMetadata {
@@ -45,7 +46,8 @@ export function useLazyPdfProcessor() {
       pages.push({
         pageNumber: i,
         width: viewport.width * 10, // Scale back up
-        height: viewport.height * 10
+        height: viewport.height * 10,
+        rotation: 0,
       });
     }
     
@@ -57,7 +59,8 @@ export function useLazyPdfProcessor() {
       pages.push({
         pageNumber: i,
         width: avgWidth,
-        height: avgHeight
+        height: avgHeight,
+        rotation: 0,
       });
     }
     
@@ -153,10 +156,21 @@ export function useLazyPdfProcessor() {
         height: 1120,
         imageUrl: p.imageUrl,
         isLoading: false,
+        rotation: 0,
       })),
     });
     setProgress(100);
     setLoading(false);
+  }, []);
+
+  const updatePageRotation = useCallback((pageNumber: number, rotation: number) => {
+    setMetadata(prev => {
+      if (!prev) return prev;
+      const updatedPages = prev.pages.map(p =>
+        p.pageNumber === pageNumber ? { ...p, rotation } : p
+      );
+      return { ...prev, pages: updatedPages };
+    });
   }, []);
 
   const clearMetadata = useCallback(() => {
@@ -173,5 +187,6 @@ export function useLazyPdfProcessor() {
     renderPage,
     clearMetadata,
     loadProcessedPages,
+    updatePageRotation,
   };
 }
