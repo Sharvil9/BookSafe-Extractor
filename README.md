@@ -67,10 +67,35 @@ Visit `http://localhost:3000` in your browser.
 
 ## FAQ & Troubleshooting
 
-- **Q:** Is any of my book data sent to a server?
-  - **A:** No. All processing is done on your device for complete privacy.
-- **Q:** What file formats are supported?
-  - **A:** See the documentation or open an issue to suggest more formats.
+- **Q:** Is any of my book data sent to a server?  
+  **A:** No. All processing is done on your device for complete privacy.
+
+- **Q:** What file formats are supported?  
+  **A:** By default: PDF, EPUB, and TXT. Check documentation for updates; open an issue to suggest more formats.(sometimes it bug outs)
+
+- **Q:** The application won’t start. What should I do?  
+  **A:** Make sure you have Node.js (v18+) and npm installed. Run `npm install` again to ensure dependencies are set up.
+
+- **Q:** My extracted files are empty or missing content.  
+  **A:** Ensure your source file is supported and not corrupted. If the problem persists, open an issue with file details (no sensitive info).
+
+- **Q:** I get a “Cannot write to output directory” error.  
+  **A:** Make sure the output directory exists and you have write permissions. You can change the directory in the configuration.
+
+- **Q:** How do I change the output folder?  
+  **A:** Edit `outputDir` in your configuration file (see CONFIGURATION.md) or use an environment variable.
+
+- **Q:** Can I use BookSafe Extractor on Mac, Windows, or Linux?  
+  **A:** Yes, it is cross-platform and should work on any OS with Node.js and npm.
+
+- **Q:** How do I update to the latest version?  
+  **A:** Pull the latest changes from GitHub and run `npm install` to get new dependencies.
+
+- **Q:** How can I contribute or request a feature?  
+  **A:** See [CONTRIBUTING.md](./CONTRIBUTING.md) for details, or open an issue/discussion on GitHub.(don't expect me to respond though.)
+
+- **Q:** How do I reset all my settings to default?  
+  **A:** Delete or rename your configuration file, and the app will generate a new one with defaults.
 
 For further help, please open an [Issue](https://github.com/Sharvil9/BookSafe-Extractor/issues).
 
