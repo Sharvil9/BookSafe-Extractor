@@ -99,4 +99,3 @@ If you want to keep things minimal: keep CONFIGURATION.md and CONTRIBUTING.md at
 
 - [GitHub Issues](https://github.com/Sharvil9/book-scribe-clipper-extract/issues)
 - [Discussions](https://github.com/Sharvil9/book-scribe-clipper-extract/discussions)
-```
