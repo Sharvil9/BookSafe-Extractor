@@ -1,5 +1,3 @@
-
-```markdown
 # Changelog
 
 All notable changes to **BookSafe Extractor** will be documented in this file.
