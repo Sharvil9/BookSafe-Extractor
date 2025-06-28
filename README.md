@@ -39,15 +39,12 @@
 
 ## Quick Start
 
-bash
+```bash
 git clone https://github.com/Sharvil9/BookSafe-Extractor.git
-
 cd BookSafe-Extractor
 npm install
 npm run dev
-
-Visit `http://localhost:3000` in your browser.
-
+```
 ---
 
 ## Usage
