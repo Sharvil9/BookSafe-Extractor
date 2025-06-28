@@ -1,5 +1,5 @@
 
-# Book Scribe Clipper Extract
+# Book Scribe Clip Extract
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![TypeScript](https://img.shields.io/badge/built%20with-TypeScript-3178c6.svg)
@@ -39,7 +39,7 @@
 
 ## Quick Start
 
-```bash
+bash
 git clone https://github.com/Sharvil9/book-scribe-clipper-extract.git
 cd book-scribe-clipper-extract
 npm install
