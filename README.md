@@ -1,73 +1,103 @@
-# Welcome to your Lovable project
+```markdown
+# Book Scribe Clipper Extract
 
-## Project info
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![TypeScript](https://img.shields.io/badge/built%20with-TypeScript-3178c6.svg)
+![Status](https://img.shields.io/badge/status-active-brightgreen)
 
-**URL**: https://lovable.dev/projects/db103f58-6cc3-4530-a7b0-9b0ae15b255c
+---
 
-## How can I edit this code?
+## Overview
 
-There are several ways of editing your application.
+**Book Scribe Clipper Extract** is a secure, fast, and privacy-focused tool for extracting and processing book content directly on your device. All processing happens locally—no data ever leaves your machine. This ensures your information is private and stays in your control. The project is designed to be simple to use, efficient, and robust for a variety of book content extraction tasks.
 
-**Use Lovable**
+![front](https://github.com/user-attachments/assets/d501362e-b5e8-43e0-a841-a699b88fd6cb)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/db103f58-6cc3-4530-a7b0-9b0ae15b255c) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## What Can This Project Do?
 
-**Use your preferred IDE**
+![edit](https://github.com/user-attachments/assets/7e7ca85c-7b44-4dd4-8488-27917bc2c0e8)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Extract Text Content:** Quickly extract text from your book files or supported sources.
+- **Instant Processing:** All operations run on your device, ensuring speed and privacy.
+- **Easy to Use:** Straightforward interface with minimal setup and dependencies.
+- **Secure:** No information is sent to any server; your data remains yours at all times.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+![grid](https://github.com/user-attachments/assets/bd835b85-48d7-4962-8f4b-0306a6f1d09b)
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Tech Stack
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- **TypeScript** – Main application logic
+- **React** – User interface
+- **Vite** – Fast build tooling
+- **shadcn-ui** & **Tailwind CSS** – Styling and UI components
 
-# Step 3: Install the necessary dependencies.
-npm i
+---
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+## Quick Start
+
+```bash
+git clone https://github.com/Sharvil9/book-scribe-clipper-extract.git
+cd book-scribe-clipper-extract
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Visit `http://localhost:3000` in your browser.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## Usage
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+1. **Launch** the app locally.
+2. **Load** your book file or content.
+3. **Extract** the text content you need.
+4. **Copy or use** the results directly.
 
-## What technologies are used for this project?
+---
 
-This project is built with:
+## Configuration
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- Edit configuration files to adjust file paths and processing preferences.
+- No network setup required: all processing is local.
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/db103f58-6cc3-4530-a7b0-9b0ae15b255c) and click on Share -> Publish.
+## FAQ & Troubleshooting
 
-## Can I connect a custom domain to my Lovable project?
+- **Q:** Is any of my book data sent to a server?
+  - **A:** No. All processing is done on your device for complete privacy.
+- **Q:** What file formats are supported?
+  - **A:** See the documentation or open an issue to suggest more formats.
 
-Yes, you can!
+For further help, please open an [Issue](https://github.com/Sharvil9/book-scribe-clipper-extract/issues).
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+---
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## Documentation
+
+**Which files are necessary and useful?**
+
+- **CONFIGURATION.md** – Useful. Explains how to customize settings and adjust file paths, formats, or behaviors.
+- **CONTRIBUTING.md** – Useful if you want others to help improve or fix the project; explains how to contribute, coding style, etc.
+- **CHANGELOG.md** – Useful for tracking what’s changed between versions, especially if others depend on your tool.
+- **SECURITY.md** – Less critical for a local-only, non-networked tool, but still good practice if you want to show you care about privacy and responsible disclosure.
+
+If you want to keep things minimal: keep CONFIGURATION.md and CONTRIBUTING.md at a minimum, and add CHANGELOG.md if you expect regular updates.
+
+---
+
+## Acknowledgements
+
+- Thanks to Me myself and Lovable.dev as well for bringing this to life.
+
+---
+
+## Contact & Community
+
+- [GitHub Issues](https://github.com/Sharvil9/book-scribe-clipper-extract/issues)
+- [Discussions](https://github.com/Sharvil9/book-scribe-clipper-extract/discussions)
+```
