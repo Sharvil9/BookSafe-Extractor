@@ -39,12 +39,23 @@
 
 ## Quick Start
 
+To get up and running with **BookSafe Extractor**, follow these steps:
+
 ```bash
+# Clone the repository
 git clone https://github.com/Sharvil9/BookSafe-Extractor.git
+
+# Navigate into the project directory
 cd BookSafe-Extractor
+
+# Install dependencies
 npm install
+
+# Start the development server
 npm run dev
 ```
+
+Then open [http://localhost:3000](http://localhost:3000) in your browser.
 ---
 
 ## Usage
