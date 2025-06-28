@@ -9,7 +9,7 @@
 
 ## Overview
 
-**Book Scribe Clipper Extract** is a secure, fast, and privacy-focused tool for extracting and processing book content directly on your device. All processing happens locally—no data ever leaves your machine. This ensures your information is private and stays in your control. The project is designed to be simple to use, efficient, and robust for a variety of book content extraction tasks.
+**BookSafe-Extractor** is a secure, fast, and privacy-focused tool for extracting and processing book content directly on your device. All processing happens locally—no data ever leaves your machine. This ensures your information is private and stays in your control. The project is designed to be simple to use, efficient, and robust for a variety of book content extraction tasks.
 
 ![front](https://github.com/user-attachments/assets/d501362e-b5e8-43e0-a841-a699b88fd6cb)
 
@@ -40,8 +40,8 @@
 ## Quick Start
 
 bash
-git clone https://github.com/Sharvil9/book-scribe-clipper-extract.git
-cd book-scribe-clipper-extract
+git clone https://github.com/Sharvil9/BookSafe-Extractor.git
+cd BookSafe-Extractor
 npm install
 npm run dev
 
@@ -72,7 +72,7 @@ Visit `http://localhost:3000` in your browser.
 - **Q:** What file formats are supported?
   - **A:** See the documentation or open an issue to suggest more formats.
 
-For further help, please open an [Issue](https://github.com/Sharvil9/book-scribe-clipper-extract/issues).
+For further help, please open an [Issue](https://github.com/Sharvil9/BookSafe-Extractor/issues).
 
 ---
 
@@ -97,5 +97,5 @@ If you want to keep things minimal: keep CONFIGURATION.md and CONTRIBUTING.md at
 
 ## Contact & Community
 
-- [GitHub Issues](https://github.com/Sharvil9/book-scribe-clipper-extract/issues)
-- [Discussions](https://github.com/Sharvil9/book-scribe-clipper-extract/discussions)
+- [GitHub Issues](https://github.com/Sharvil9/BookSafe-Extractor/issues)
+- [Discussions](https://github.com/Sharvil9/BookSafe-Extractor/discussions)
