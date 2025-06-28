@@ -1,4 +1,4 @@
-```markdown
+
 # Book Scribe Clipper Extract
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
@@ -44,7 +44,6 @@ git clone https://github.com/Sharvil9/book-scribe-clipper-extract.git
 cd book-scribe-clipper-extract
 npm install
 npm run dev
-```
 
 Visit `http://localhost:3000` in your browser.
 
